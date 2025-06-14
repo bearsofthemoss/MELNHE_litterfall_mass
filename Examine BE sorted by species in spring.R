@@ -84,6 +84,7 @@ ggplot( full_baskets,
 
 ggplot(full_baskets, aes(x=Total_Mass, y=Leaf_Mass))+geom_point()
 
+table(full_baskets$Lityear, full_baskets$Season)
 #Fall litter, BE in fall, prop BE in fall, 
 
 
@@ -95,6 +96,10 @@ ggplot(full_baskets, aes(x=Total_Mass, y=Leaf_Mass))+geom_point()
 
 spring <- sorted_species_weights[sorted_species_weights$Season=="Spring", ]
 str(spring)
+
+View(spring)
+table(spring)
+head(spring)
 
 summary(spring)
 # Replace columns 4 through 12 with numeric versions
@@ -147,15 +152,17 @@ library(broom)
 spb$prop_FAGR <- spb$FAGR/ spb$fall_mass
 
 # Fit the model
-#model <- lm(FAGR ~ prop_FAGR+fall_mass + summer_mass + BE_mass_fall, data=spb)
+ model <- lm(FAGR ~ prop_FAGR+fall_mass + summer_mass + BE_mass_fall, data=spb)
+ 
 spring_FAGR_model <- lm(FAGR ~ prop_FAGR+ BE_mass_fall, data=spb)
 
-summary(model)$r.squared
+anova(spring_FAGR_model)
+summary(spring_FAGR_model)$r.squared
 
 # Create a dataframe of model results
-model_data <- augment(model)
+model_data <- augment(spring_FAGR_model)
 
-summary(model)$r.squared
+summary(spring_FAGR_model)$r.squared
 
 # Residuals vs Fitted Values Plot
 ggplot(model_data, aes(x = .fitted, y = .resid)) +
@@ -179,7 +186,7 @@ ggplot(model_data, aes(x = .fitted, y = FAGR)) +
 library(broom)
 
 # Extract coefficients
-coef_data <- tidy(model)
+coef_data <- tidy(spring_FAGR_model)
 
 ggplot(coef_data[-1,], aes(x = term, y = estimate)) +
   geom_point() +
@@ -197,7 +204,24 @@ library(performance)
 check_model(model)
 
 
-##  So we have full_baskets, and then the 
+##  Make the predictions for the proportion of BE in spring.
 
-sp_list
+table(full_baskets$Season)
+##########################################
 
+full_baskets$buk <- paste(full_baskets$Lityear, full_baskets$Stand, full_baskets$Plot, full_baskets$Basket)
+
+
+full_baskets$fall_mass <- fb_fall$Total_Mass[match(full_baskets$buk, fb_fall$buk)]
+
+full_baskets$BE_mass_fall <- as.numeric(fb_fall$FAGR[match(full_baskets$buk, fb_fall$buk)])
+
+# tricky-  do we set the BE proportion to 0 uf there isn't a sorted value for BE?
+full_baskets[is.na(full_baskets$BE_mass_fall), "BE_mass_fall"] <- 0
+
+full_baskets$prop_FAGR <- full_baskets$BE_mass_fall/ full_baskets$fall_mass
+
+full_baskets$spring_BE_weight <- predict( spring_FAGR_model, newdata=  full_baskets , type= "response")
+
+
+hist(full_baskets$spring_BE_weight)
