@@ -15,13 +15,13 @@ library(here)
 
 
 #####
-lit <- read.csv(here::here("data","MELNHE Litterfall mass.csv"))
+lit <- read.csv(here::here("data","MELNHE Litterfall massJune2025.csv"))
 head(lit)
 table(lit$Year)
 
 ## exclude 2005 for now
-lit <- lit[lit$Year>=2009,]
-table(lit$Season)
+#lit <- lit[lit$Year>=2009,]
+table(lit$Season, lit$Year)
 
 # Summer, fall, spring
 str(lit)
@@ -73,8 +73,8 @@ full_baskets$seas_bask <- paste(full_baskets$Season, full_baskets$Basket)
 
 sel_stands <- c("C1","C2","C3","C4","C5","C6")
 
-#ggplot( full_baskets[full_baskets$Stand==c(sel_stands),], 
-ggplot( full_baskets, 
+ggplot( full_baskets[full_baskets$Stand==c(sel_stands),], 
+#ggplot( full_baskets, 
         aes(x=time, y=Total_Mass+1, col=Season, group=seas_bask))+
   geom_point()+
   geom_line()+
@@ -88,6 +88,8 @@ table(full_baskets$Lityear, full_baskets$Season)
 #Fall litter, BE in fall, prop BE in fall, 
 
 
+lit <- lit[lit$Year>=2009,]
+lit <- lit[lit$Lityear<=2023,]
 
 
 
