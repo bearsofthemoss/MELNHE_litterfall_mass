@@ -55,6 +55,10 @@ simp_baskets <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"
 #This line is for only HBO!
 simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
 
+
+
+#  For making Fall graphs for error checking:
+
 lgf2$Basket <- simp_baskets[as.character(lgf2$Basket)]
 
 # First, make Year a factor in correct order
@@ -107,7 +111,7 @@ lit.fall.jb  %>% filter(lit.fall.jb$Stand == "C1") %>%
   geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 
 
-#Spring Graphs:
+# Spring Graphs:
 
 lit.spring<-subset(lit.all2, Season =="Spring")
 ######run the following line only if you want to combine all the baskets into the 5 modern labels
@@ -127,7 +131,8 @@ lit.spring %>% filter(Stand == "C1") %>%
   geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", linewidth = 1)
 
 
-#Summer Graphs:
+# Summer Graphs:
+
 lit.summer<-subset(lit.all2, Season =="Summer")
 ######run the following line only if you want to combine all the baskets into the 5 modern labels
 lit.summer$Basket <- simp_baskets[as.character(lit.summer$Basket)]
@@ -148,11 +153,12 @@ lit.summer %>% filter(Stand == "C1") %>%
 
 
 #Total Graphs (Annual):
-  
+
 lit.all2$Total_Mass<-as.numeric(lit.all2$Total_Mass)
 lit.all2$Total_Mass_g_m2<-as.numeric(lit.all2$Total_Mass_g_m2)
 lit.all2$N<-as.factor(lit.all2$N)
 lit.all2$P<-as.factor(lit.all2$P)
+
 
 annuallf<-ddply(lit.all2, c("Site","Stand","Plot","Lityear","Treatment","N","P","Ca","Basket"), summarise,
                 totalmass=sum(Total_Mass, na.rm=F),
@@ -175,13 +181,13 @@ meanannuallf<-ddply(annuallf, c("Site","Stand","Plot","Lityear","Treatment","N",
 meanannuallfNP<-subset(meanannuallf, Treatment !="Ca")
 meanannuallfNP<-subset(meanannuallfNP, Stand=="C1"|Stand=="C2"|Stand=="C4"|Stand=="C6"|Stand=="C8"|Stand=="C9"|Stand=="HBM"|Stand=="HBO"|Stand=="JBM"|Stand=="JBO")
 
-meanannuallfNP %>% filter(Stand == "JBO") %>%
+meanannuallfNP %>% filter(Stand == "C1") %>%
   ggplot(aes(x = factor(Lityear), y = meanmassgm2, fill = factor(Lityear))) +
   geom_bar(stat = "identity")+
   facet_grid(Stand~Plot) +
   theme_bw()+
   theme(axis.text.x = element_text(angle = 90))+
-  ggtitle("JBO")
+  ggtitle("C1")
 
 
 #total annual litterfall graphs with stacked seasons by plot
@@ -202,3 +208,75 @@ seasonal_annual_mass %>%
   theme(axis.text.x = element_text(angle = 90)) +
   ggtitle("C1 – Seasonal Contribution to Annual Litterfall Mass")
 
+
+##################################################
+#here is what AI gave me when I tried to fix the averages that were including missing baskets as 0s rather than NAs
+#another issue that popped up was the earlier years had way higher averages b/c all the seasons were weighed equally
+#now these combine the seasons to just average the totals, but 2019 still looks strangely low
+#Alex you probably can do thise much neater than what I have below but maybe this works?
+
+#annual totals graph
+detach("package:plyr", unload=TRUE)
+
+lit.all2$Total_Mass <- as.numeric(lit.all2$Total_Mass)
+lit.all2$Total_Mass_g_m2 <- as.numeric(lit.all2$Total_Mass_g_m2)
+lit.all2$N <- as.factor(lit.all2$N)
+lit.all2$P <- as.factor(lit.all2$P)
+
+
+# 1️⃣ Sum all seasons per basket for each litterfall year
+annual_basket_totals <- lit.all2 %>%
+  group_by(Site, Stand, Plot, Lityear, Basket) %>%
+  summarise(
+    basket_total_gm2 = sum(Total_Mass_g_m2, na.rm = TRUE)  # sum all seasons
+  ) %>%
+  ungroup()
+
+# 2️⃣ Compute mean annual litterfall per stand/plot
+mean_annual_totals <- annual_basket_totals %>%
+  group_by(Site, Stand, Plot, Lityear) %>%
+  summarise(
+    mean_annual_gm2 = mean(basket_total_gm2, na.rm = TRUE),
+    n_baskets_used = sum(!is.na(basket_total_gm2))
+  ) %>%
+  ungroup()
+
+# 3️⃣ Plot for a specific Stand, e.g., C1
+mean_annual_totals %>%
+  filter(Stand == "C1") %>%
+  ggplot(aes(x = factor(Lityear), y = mean_annual_gm2, fill = factor(Lityear))) +
+  geom_bar(stat = "identity") +
+  facet_grid(Plot ~ .) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("C1 – Mean Annual Litterfall per Plot (All Seasons Combined)")
+
+
+#stacked season graphs
+# 1️⃣ Sum litterfall per basket for each season within a litterfall year
+seasonal_basket_totals <- lit.all2 %>%
+  group_by(Site, Stand, Plot, Lityear, Basket, Season) %>%
+  summarise(
+    basket_season_total = sum(Total_Mass_g_m2, na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# 2️⃣ Compute mean seasonal totals per plot
+mean_seasonal_totals <- seasonal_basket_totals %>%
+  group_by(Site, Stand, Plot, Lityear, Season) %>%
+  summarise(
+    mean_season_gm2 = mean(basket_season_total, na.rm = TRUE),
+    n_baskets_used = sum(!is.na(basket_season_total))
+  ) %>%
+  ungroup()
+
+# 3️⃣ Plot seasonal contributions for a specific Stand, e.g., C1
+mean_seasonal_totals %>%
+  filter(Stand == "C1") %>%
+  ggplot(aes(x = factor(Lityear), y = mean_season_gm2, fill = Season)) +
+  geom_bar(stat = "identity") +
+  facet_grid(Plot ~ .) +
+  scale_fill_manual(values = c("Fall" = "#E69F00", "Spring" = "#56B4E9", "Summer" = "#009E73")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("C1 – Seasonal Contribution to Annual Litterfall (Mean per Plot)")
