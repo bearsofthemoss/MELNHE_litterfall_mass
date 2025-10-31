@@ -8,27 +8,33 @@ library(ggplot2)
 library(tidyr)
 library(gridExtra)
 library(RColorBrewer)
-#these packages are not needed for the fall graphs
+library(here)
 library(dplyr)
-library(plyr)
+# library(plyr)  # dplyr is useful, plyr leaks like a sieve and should be avoided
 
 
 #FALL GRAPHS
 
 
 #Import data
-lit.all2<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
+lit.all <- read.csv( here::here("data","MELNHE Litterfall EDI Data 2025-10-26.csv"))
+#lit.all2<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
 
 #Isolate fall data
-lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")
+lit.fall.sort<-subset(lit.all, Season == "Fall" & Sorted == "Y")
 
 #Convert to long form
-lgf2<- gather(lit.fall.sort2[,c(1:41)], "SP","mass",c(18:41))
-lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
-lgf2$Year<-as.factor(lgf2$Year)
-lgf2$mass<-as.numeric(lgf2$mass)
+names(lit.fall.sort)
+# columns ACPE to Nonleaf?   Do we want other spring, other, twigs? or problematic?
+lgf<- gather(lit.fall.sort[,c(1:40)], "SP","mass",c(19:40))
+lgf$staplo<-paste(lgf$Stand, lgf$Plot)
+lgf$Year<-as.factor(lgf$Year)
+lgf$mass<-as.numeric(lgf$mass)
 
 #Pick a color palette
+# why 27?
+length(unique(lgf$Basket)) # I see 19 unique species
+
 n <- 27 # 19 is for 19 'species'
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
@@ -37,52 +43,77 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 pie(rep(1,n), col=sample(col_vector, n))
 litcol<-col_vector #for convenience.
 
-unique(lgf2$Basket)
+## the issue is having 19 unique basket types
+unique(lgf$Basket)
+a <- as.data.frame(table(lgf$Basket, lgf$staplo, lgf$Stand))
+a <- a[a$Freq>0,]
+
+ggplot(a, aes(x=Freq, y= Var1))+geom_col()+
+  facet_wrap(~Var3, scales= "free_x", nrow=2)
+
 ###################################################################################
-#TEMP CHANGES made by Suika messing around 10/03/25
-#only use this code when you want simplified basket labels using the modern names. Only works for BEF plots 1-3.
-#baskets may not correspond with other baskets in the same panel across red dotted line
-#otherwise, use the original code below this section
-#if after using this code, you need to then make different graphs (eg spring) clear environment then re-run code excluding this section
-
-#streamline the basket labels so that there are only five
-#This line is for all stands except for HBM, HBO, and JBM!!!!
-simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
-
-#This line is for only HBM and JBM!
-simp_baskets <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
-
-#This line is for only HBO!
-simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
+# Recode levels - start with just the 1, 2, 3, 4, 5 and LF
+lgf$basket_uniform <- dplyr::recode_factor(lgf$Basket, 
+  "1"="b1","2"="b2","3"="b3","4"="b4","5"="b5",
+  "LF1"="b1","LF2"="b2","LF3"="b3","LF4"="b4","LF5"="b5",
+  "A1"="b1","A3"="b2","B2"="b3","C1"="b4","C3"="b5"
+)
 
 
+unique(lgf$basket_uniform) # now down to 9
+b <- as.data.frame(table(lgf$basket_uniform, lgf$staplo, lgf$Stand))
+b <- b[b$Freq>0,]
 
-#  For making Fall graphs for error checking:
+ggplot(b, aes(x=Freq, y= Var1))+geom_col()+
+  facet_wrap(~Var3, scales= "free_x", nrow=2)
 
-lgf2$Basket <- simp_baskets[as.character(lgf2$Basket)]
+################
 
-# First, make Year a factor in correct order
-lgf2$Year <- factor(lgf2$Year, levels = sort(unique(as.numeric(as.character(lgf2$Year)))))
+## Now add the tricky ones
+# Recode levels - start with just the 1, 2, 3, 4, 5 and LF
+lgf$basket_uniform <- dplyr::recode_factor(lgf$Basket, 
+   "1"="b1","2"="b2","3"="b3","4"="b4","5"="b5",
+   "LF1"="b1","LF2"="b2","LF3"="b3","LF4"="b4","LF5"="b5",
+   "A1"="b1","A3"="b2","B2"="b3","C1"="b4","C3"="b5",
+   "CENTER"= "b2","B1"="b4","A2"="b5", "Y3"="b5")
 
-# Subset
-df_sub <- lgf2[lgf2$staplo == "HBM 2",]
+
+unique(lgf$basket_uniform) # now down to 9
+c <- as.data.frame(table(lgf$basket_uniform, lgf$staplo, lgf$Stand))
+c <- c[c$Freq>0,]
+
+ggplot(c, aes(x=Freq, y= Var1))+geom_col()+
+  facet_wrap(~Var3, scales= "free_x", nrow=2)
+
+
+# View the crosswalk
+table(lgf$Basket, lgf$basket_uniform)
+
+###############################################
+
+df_sub <- lgf[lgf$staplo == "JBO 2",]
 
 # Create plot
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
-  facet_wrap(~Basket, scales = "fixed", nrow = 2) +
+  facet_wrap(~basket_uniform, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand HBM 2 over the years") +
+  ggtitle("Stand JBO 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
   #xintercept should be (2.5, 4.5) for all of BEF, and (3.5) for Hubbard and Jeffers Brooks
   geom_vline(xintercept = c(3.5), linetype = "dashed", color = "red", size = 1)
+
+
+
+
+
 ###################################################################################################
 
 #Fall graphs that show all the basket labels
 #Make the graphs - replace the stand/plot combination and ggtitle for each graph and re-run the code
-m1<-ggplot(lgf2[lgf2$staplo=="C1 3",], aes(x=Year, y=mass, fill=SP))+geom_bar(stat="identity", col="black")+ theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+m1<-ggplot(lgf[lgf$staplo=="C1 3",], aes(x=Year, y=mass, fill=SP))+geom_bar(stat="identity", col="black")+ theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   facet_wrap(~Basket, scales="fixed", nrow=2)+
   scale_fill_manual( values= litcol)+
   theme(axis.text.x = element_text(angle = 90, vjust =.5))+
