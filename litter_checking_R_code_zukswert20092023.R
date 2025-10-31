@@ -43,73 +43,35 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 pie(rep(1,n), col=sample(col_vector, n))
 litcol<-col_vector #for convenience.
 
-## the issue is having 19 unique basket types
-unique(lgf$Basket)
-a <- as.data.frame(table(lgf$Basket, lgf$staplo, lgf$Stand))
-a <- a[a$Freq>0,]
+#streamline the basket labels so that there are only five
+#This line is for all stands except for HBM, HBO, and JBM!!!!
+simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
 
-ggplot(a, aes(x=Freq, y= Var1))+geom_col()+
-  facet_wrap(~Var3, scales= "free_x", nrow=2)
+#This line is for only HBM and JBM!
+simp_baskets <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
 
-###################################################################################
-# Recode levels - start with just the 1, 2, 3, 4, 5 and LF
-lgf$basket_uniform <- dplyr::recode_factor(lgf$Basket, 
-  "1"="b1","2"="b2","3"="b3","4"="b4","5"="b5",
-  "LF1"="b1","LF2"="b2","LF3"="b3","LF4"="b4","LF5"="b5",
-  "A1"="b1","A3"="b2","B2"="b3","C1"="b4","C3"="b5"
-)
+#This line is for only HBO!
+simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
 
+lgf$Basket <- simp_baskets[as.character(lgf$Basket)]
 
-unique(lgf$basket_uniform) # now down to 9
-b <- as.data.frame(table(lgf$basket_uniform, lgf$staplo, lgf$Stand))
-b <- b[b$Freq>0,]
+# First, make Year a factor in correct order
+lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
 
-ggplot(b, aes(x=Freq, y= Var1))+geom_col()+
-  facet_wrap(~Var3, scales= "free_x", nrow=2)
+#create plot
+df_sub <- lgf[lgf$staplo == "C7 1",]
 
-################
-
-## Now add the tricky ones
-# Recode levels - start with just the 1, 2, 3, 4, 5 and LF
-lgf$basket_uniform <- dplyr::recode_factor(lgf$Basket, 
-   "1"="b1","2"="b2","3"="b3","4"="b4","5"="b5",
-   "LF1"="b1","LF2"="b2","LF3"="b3","LF4"="b4","LF5"="b5",
-   "A1"="b1","A3"="b2","B2"="b3","C1"="b4","C3"="b5",
-   "CENTER"= "b2","B1"="b4","A2"="b5", "Y3"="b5")
-
-
-unique(lgf$basket_uniform) # now down to 9
-c <- as.data.frame(table(lgf$basket_uniform, lgf$staplo, lgf$Stand))
-c <- c[c$Freq>0,]
-
-ggplot(c, aes(x=Freq, y= Var1))+geom_col()+
-  facet_wrap(~Var3, scales= "free_x", nrow=2)
-
-
-# View the crosswalk
-table(lgf$Basket, lgf$basket_uniform)
-
-###############################################
-
-df_sub <- lgf[lgf$staplo == "C7 2",]
-
-# Create plot
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
-  facet_wrap(~basket_uniform, scales = "fixed", nrow = 2) +
+  facet_wrap(~Basket, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand C7 2 over the years") +
+  ggtitle("Stand C7 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  #xintercept should be (2.5, 4.5) for all of BEF, and (3.5) for Hubbard and Jeffers Brooks
+  #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
   geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
 
-
-
-
-
-###################################################################################################
 
 #Fall graphs that show all the basket labels
 #Make the graphs - replace the stand/plot combination and ggtitle for each graph and re-run the code
@@ -244,7 +206,7 @@ seasonal_annual_mass %>%
 #here is what AI gave me when I tried to fix the averages that were including missing baskets as 0s rather than NAs
 #another issue that popped up was the earlier years had way higher averages b/c all the seasons were weighed equally
 #now these combine the seasons to just average the totals, but 2019 still looks strangely low
-#Alex you probably can do thise much neater than what I have below but maybe this works?
+#Alex you probably can do this much neater than what I have below but maybe this works?
 
 #annual totals graph
 detach("package:plyr", unload=TRUE)
