@@ -91,7 +91,7 @@ table(lgf$Basket, lgf$basket_uniform)
 
 ###############################################
 
-df_sub <- lgf[lgf$staplo == "JBO 2",]
+df_sub <- lgf[lgf$staplo == "C7 2",]
 
 # Create plot
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
@@ -100,10 +100,10 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   facet_wrap(~basket_uniform, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand JBO 2 over the years") +
+  ggtitle("Stand C7 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
   #xintercept should be (2.5, 4.5) for all of BEF, and (3.5) for Hubbard and Jeffers Brooks
-  geom_vline(xintercept = c(3.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
 
 
 
