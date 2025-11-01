@@ -15,9 +15,11 @@ library(readr)
 #FALL GRAPHS
 
 
-#Import data
+#Import data using the code below for bartlett stands, but there may still be some errors Alex!
 lit.all <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"")
 #lit.all2<- read.csv( here::here("data","MELNHE Litterfall EDI Data 2025-10-26.csv")) #This is the csv of the "Master Data Sheet" in the EDI file
+#import using the code below for hubbard and jeffers brook
+lit.all<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv")
 
 #Isolate fall data
 lit.fall.sort<-subset(lit.all, Season == "Fall" & Sorted == "Y")
@@ -47,18 +49,19 @@ litcol<-col_vector #for convenience.
 simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
 
 #This line is for only HBM and JBM!
-simp_baskets <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
+simp_baskets_HBM_JBM <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
 
 #This line is for only HBO!
-simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
+simp_baskets_HBO <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
 
-lgf$Basket <- simp_baskets[as.character(lgf$Basket)]
+lgf$Basket <- simp_baskets_HBM_JBM[as.character(lgf$Basket)]
+
 
 # First, make Year a factor in correct order
 lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
 
 #create plot
-df_sub <- lgf[lgf$staplo == "C7 1",]
+df_sub <- lgf[lgf$staplo == "HBM 1",]
 
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
   geom_bar(stat = "identity", col = "black") + 
@@ -66,7 +69,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand C7 1 over the years") +
+  ggtitle("Stand HBM 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
   #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
   geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
