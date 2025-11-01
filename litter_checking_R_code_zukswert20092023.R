@@ -11,13 +11,12 @@ library(RColorBrewer)
 library(here)
 library(dplyr)
 # library(plyr)  # dplyr is useful, plyr leaks like a sieve and should be avoided
-
-
+library(readr)
 #FALL GRAPHS
 
 
 #Import data
-lit.all <- read.csv(here::here("data","MELNHE Litterfall EDI Data 2025-10-26.csv"))
+lit.all <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"")
 #lit.all2<- read.csv( here::here("data","MELNHE Litterfall EDI Data 2025-10-26.csv")) #This is the csv of the "Master Data Sheet" in the EDI file
 
 #Isolate fall data
@@ -57,13 +56,6 @@ lgf$Basket <- simp_baskets[as.character(lgf$Basket)]
 
 # First, make Year a factor in correct order
 lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
-
-
-################ Hi Alex! this is where I have an issue that maybe you dont have.
-#below I've subsetted where I should have C7 data but the 2004 fall data stops after C6 and goes straight to 2005
-#is this an issue with how I'm downloading the file from the google sheet?
-subset_C7 <- lgf[75:85, 3:14]
-print(subset_C7)
 
 #create plot
 df_sub <- lgf[lgf$staplo == "C7 1",]
