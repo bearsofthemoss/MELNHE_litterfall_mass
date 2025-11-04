@@ -11,12 +11,11 @@ library(ggplot2)
 library(tidyr)
 library(gridExtra)
 library(RColorBrewer)
-library(readr)
 
 # FALL GRAPHS
 
 #Import data
-lit.all2 <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"") #This is the csv of the "Master Data Sheet" in the EDI file
+lit.all2 <- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
 
 
 #Isolate fall data
