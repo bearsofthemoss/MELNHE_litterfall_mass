@@ -10,19 +10,38 @@ library(gridExtra)
 library(RColorBrewer)
 library(here)
 library(dplyr)
-# library(plyr)  # dplyr is useful, plyr leaks like a sieve and should be avoided
+
 library(readr)
 #FALL GRAPHS
 
+#
 
-#Import data using the code below for bartlett stands, but there may still be some errors Alex!
-lit.all <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"")
-#lit.all2<- read.csv( here::here("data","MELNHE Litterfall EDI Data 2025-10-26.csv")) #This is the csv of the "Master Data Sheet" in the EDI file
-#import using the code below for hubbard and jeffers brook
-lit.all<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv")
+# #Import data using the code below for bartlett stands, but there may still be some errors Alex!
+# lit.all <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"")
+# #import using the code below for hubbard and jeffers brook
+# lit.all<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv")
 
+lit.all<- read.csv( here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
+# Read in the final data tab as a .csv file
+
+#################################################
 #Isolate fall data
 lit.fall.sort<-subset(lit.all, Season == "Fall" & Sorted == "Y")
+
+# Looks like 'Fall' in 2004 is being identified as a different spelling
+#maybe there is a space?
+# the command 'trimws' or trim white space can be helpful here
+table(lit.all$Lityear, lit.all$Season)
+
+table(lit.all$Lityear, trimws(lit.all$Season))
+
+# Erase above if satisfied with 'trimws' fix
+#################################################
+
+# replace with this
+lit.all$Season <- trimws(lit.all$Season)
+lit.fall.sort<-subset(lit.all, Season == "Fall" & Sorted == "Y")
+
 
 #Convert to long form
 names(lit.fall.sort)
@@ -32,11 +51,15 @@ lgf$staplo<-paste(lgf$Stand, lgf$Plot)
 lgf$Year<-as.factor(lgf$Year)
 lgf$mass<-as.numeric(lgf$mass)
 
+# First, make Year a factor in correct order
+lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
+
+
 #Pick a color palette
 # why 27?
 length(unique(lgf$Basket)) # I see 19 unique species
 
-n <- 27 # 19 is for 19 'species'
+n <- 19 # 19 is for 19 'species'
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
@@ -46,6 +69,7 @@ litcol<-col_vector #for convenience.
 
 #streamline the basket labels so that there are only five
 #This line is for all stands except for HBM, HBO, and JBM!!!!
+# so its for JBO and Bartlett?
 simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
 
 #This line is for only HBM and JBM!
@@ -54,35 +78,68 @@ simp_baskets_HBM_JBM <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"=
 #This line is for only HBO!
 simp_baskets_HBO <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
 
-lgf$Basket <- simp_baskets_HBM_JBM[as.character(lgf$Basket)]
 
 
-# First, make Year a factor in correct order
-lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
+####  Do the factoring depending on the stand
+sel_stand <- "HBM"
+df_sub <- lgf[lgf$Stand == sel_stand,]
 
-#create plot
-df_sub <- lgf[lgf$staplo == "HBM 1",]
+df_sub$uniform_Basket <- simp_baskets_HBM_JBM[as.character(df_sub$Basket)]
 
+# looks like non-bartlett don't have 2004 and 2005?
+table(lgf$Lityear, lgf$Stand)
+
+
+#create plot - combine plots 1 through 4
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand HBM 1 over the years") +
+  ggtitle(paste0("Data for ", sel_stand)) +
   # Add vertical separator lines BETWEEN certain years
   #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
-head(lgf)
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)+
+  facet_grid(staplo ~uniform_Basket )
 
-#Fall graphs that show all the basket labels
-#Make the graphs - replace the stand/plot combination and ggtitle for each graph and re-run the code
-m1<-ggplot(lgf[lgf$staplo=="C1 3",], aes(x=Year, y=mass, fill=SP))+geom_bar(stat="identity", col="black")+ theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  facet_wrap(~Basket, scales="fixed", nrow=2)+
-  scale_fill_manual( values= litcol)+
-  theme(axis.text.x = element_text(angle = 90, vjust =.5))+
-  ggtitle("Stand C1 3 over the years")
-m1
+
+
+#############################
+
+# the code chunk below was made by adjust sel_stand 
+# and choosing a different basket formatting type for Bartlett or JBO
+sel_stand <- "C1"
+df_sub <- lgf[lgf$Stand == sel_stand,]
+
+df_sub$uniform_Basket <- simp_baskets[as.character(df_sub$Basket)]
+
+
+#create plot - combine plots 1 through 4
+ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+  geom_bar(stat = "identity", col = "black") + 
+  theme_bw() +
+  facet_wrap(~Basket, scales = "fixed", nrow = 2) +
+  scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
+  ggtitle(paste0("Data for ", sel_stand)) +
+  # Add vertical separator lines BETWEEN certain years
+  #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)+
+  facet_grid(staplo ~uniform_Basket )
+
+###################################################################
+
+###################################################################
+
+# #Fall graphs that show all the basket labels
+# #Make the graphs - replace the stand/plot combination and ggtitle for each graph and re-run the code
+# m1<-ggplot(lgf[lgf$staplo=="C1 3",], aes(x=Year, y=mass, fill=SP))+geom_bar(stat="identity", col="black")+ theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+#   facet_wrap(~Basket, scales="fixed", nrow=2)+
+#   scale_fill_manual( values= litcol)+
+#   theme(axis.text.x = element_text(angle = 90, vjust =.5))+
+#   ggtitle("Stand C1 3 over the years")
+# m1
 
 
 # Example of one total mass graphs from one stand:
