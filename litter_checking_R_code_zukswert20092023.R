@@ -55,11 +55,20 @@ lgf$mass<-as.numeric(lgf$mass)
 lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
 
 
-#Pick a color palette
-# why 27?
-length(unique(lgf$Basket)) # I see 19 unique species
+###### Look at the species names
+non_zero <- lgf[lgf$mass>0,]
+length(unique(non_zero$SP)) # I see 22 unique species
+sp_count <- as.data.frame(table(non_zero$SP)) 
+sp_count$prop <- sp_count$Freq / sum(sp_count$Freq) * 100
 
-n <- 19 # 19 is for 19 'species'
+ggplot(sp_count, aes(x=reorder(Var1, -Freq), y= prop))+
+         geom_point()+coord_flip()+
+  labs(y= "Percent of sorted by species records",
+       x="Species names in dataset")+
+  theme_bw()
+
+#Pick a color palette
+n <- length(unique(lgf$SP)) 
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
@@ -85,10 +94,6 @@ sel_stand <- "HBM"
 df_sub <- lgf[lgf$Stand == sel_stand,]
 
 df_sub$uniform_Basket <- simp_baskets_HBM_JBM[as.character(df_sub$Basket)]
-
-# looks like non-bartlett don't have 2004 and 2005?
-table(lgf$Lityear, lgf$Stand)
-
 
 #create plot - combine plots 1 through 4
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
