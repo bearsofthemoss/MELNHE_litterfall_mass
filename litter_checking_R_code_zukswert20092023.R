@@ -67,7 +67,6 @@ ggplot(sp_count, aes(x=reorder(Var1, -Freq), y= prop))+
        x="Species names in dataset")+
   theme_bw()
 
-#Pick a color palette
 n <- length(unique(lgf$SP)) 
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
