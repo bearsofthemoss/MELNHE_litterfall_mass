@@ -10,17 +10,39 @@ library(gridExtra)
 library(RColorBrewer)
 #these packages are not needed for the fall graphs
 library(dplyr)
-library(plyr)
 
 
+library(readr)
 #FALL GRAPHS
 
+#
+
+# #Import data using the code below for bartlett stands, but there may still be some errors Alex!
+# lit.all <- read_csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv", quote = "\"")
+# #import using the code below for hubbard and jeffers brook
+# lit.all<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv")
 
 #Import data
 lit.all2<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
 
+#################################################
 #Isolate fall data
 lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")
+
+# Looks like 'Fall' in 2004 is being identified as a different spelling
+#maybe there is a space?
+# the command 'trimws' or trim white space can be helpful here
+table(lit.all$Lityear, lit.all$Season)
+
+table(lit.all$Lityear, trimws(lit.all$Season))
+
+# Erase above if satisfied with 'trimws' fix
+#################################################
+
+# replace with this
+lit.all$Season <- trimws(lit.all$Season)
+lit.fall.sort<-subset(lit.all, Season == "Fall" & Sorted == "Y")
+
 
 #Convert to long form
 lgf2<- gather(lit.fall.sort2[,c(1:41)], "SP","mass",c(18:41))
@@ -28,6 +50,23 @@ lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
 lgf2$Year<-as.factor(lgf2$Year)
 lgf2$mass<-as.numeric(lgf2$mass)
 
+# First, make Year a factor in correct order
+lgf$Year <- factor(lgf$Year, levels = sort(unique(as.numeric(as.character(lgf$Year)))))
+
+
+###### Look at the species names
+non_zero <- lgf[lgf$mass>0,]
+length(unique(non_zero$SP)) # I see 22 unique species
+sp_count <- as.data.frame(table(non_zero$SP)) 
+sp_count$prop <- sp_count$Freq / sum(sp_count$Freq) * 100
+
+ggplot(sp_count, aes(x=reorder(Var1, -Freq), y= prop))+
+         geom_point()+coord_flip()+
+  labs(y= "Percent of sorted by species records",
+       x="Species names in dataset")+
+  theme_bw()
+
+n <- length(unique(lgf$SP)) 
 #Pick a color palette
 n <- 27 # 19 is for 19 'species'
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
@@ -36,6 +75,49 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 # nice way to visualize the colors.
 pie(rep(1,n), col=sample(col_vector, n))
 litcol<-col_vector #for convenience.
+
+#streamline the basket labels so that there are only five
+#This line is for all stands except for HBM, HBO, and JBM!!!!
+# so its for JBO and Bartlett?
+simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
+
+#This line is for only HBM and JBM!
+simp_baskets_HBM_JBM <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
+
+#This line is for only HBO!
+simp_baskets_HBO <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
+
+
+
+####  Do the factoring depending on the stand
+sel_stand <- "HBM"
+df_sub <- lgf[lgf$Stand == sel_stand,]
+
+df_sub$uniform_Basket <- simp_baskets_HBM_JBM[as.character(df_sub$Basket)]
+
+#create plot - combine plots 1 through 4
+ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+  geom_bar(stat = "identity", col = "black") + 
+  theme_bw() +
+  facet_wrap(~Basket, scales = "fixed", nrow = 2) +
+  scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
+  ggtitle(paste0("Data for ", sel_stand)) +
+  # Add vertical separator lines BETWEEN certain years
+  #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)+
+  facet_grid(staplo ~uniform_Basket )
+
+
+
+#############################
+
+# the code chunk below was made by adjust sel_stand 
+# and choosing a different basket formatting type for Bartlett or JBO
+sel_stand <- "C1"
+df_sub <- lgf[lgf$Stand == sel_stand,]
+
+df_sub$uniform_Basket <- simp_baskets[as.character(df_sub$Basket)]
 
 unique(lgf2$Basket)
 ###################################################################################
@@ -67,13 +149,31 @@ lgf2$Year <- factor(lgf2$Year, levels = sort(unique(as.numeric(as.character(lgf2
 # Subset
 df_sub <- lgf2[lgf2$staplo == "HBM 2",]
 
-# Create plot
+#create plot - combine plots 1 through 4
 ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
+  ggtitle(paste0("Data for ", sel_stand)) +
+  # Add vertical separator lines BETWEEN certain years
+  #xintercept should be (2.5, 4.5) for all of BEF plots, and (3.5) for Hubbard and Jeffers Brooks
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)+
+  facet_grid(staplo ~uniform_Basket )
+
+###################################################################
+
+###################################################################
+
+# #Fall graphs that show all the basket labels
+# #Make the graphs - replace the stand/plot combination and ggtitle for each graph and re-run the code
+# m1<-ggplot(lgf[lgf$staplo=="C1 3",], aes(x=Year, y=mass, fill=SP))+geom_bar(stat="identity", col="black")+ theme_bw()+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+#   facet_wrap(~Basket, scales="fixed", nrow=2)+
+#   scale_fill_manual( values= litcol)+
+#   theme(axis.text.x = element_text(angle = 90, vjust =.5))+
+#   ggtitle("Stand C1 3 over the years")
+# m1
   ggtitle("Stand HBM 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
   #xintercept should be (2.5, 4.5) for all of BEF, and (3.5) for Hubbard and Jeffers Brooks
@@ -213,7 +313,7 @@ seasonal_annual_mass %>%
 #here is what AI gave me when I tried to fix the averages that were including missing baskets as 0s rather than NAs
 #another issue that popped up was the earlier years had way higher averages b/c all the seasons were weighed equally
 #now these combine the seasons to just average the totals, but 2019 still looks strangely low
-#Alex you probably can do thise much neater than what I have below but maybe this works?
+#Alex you probably can do this much neater than what I have below but maybe this works?
 
 #annual totals graph
 detach("package:plyr", unload=TRUE)

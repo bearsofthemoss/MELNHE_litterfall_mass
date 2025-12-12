@@ -15,7 +15,8 @@ library(RColorBrewer)
 # FALL GRAPHS
 
 #Import data
-lit.all2<- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
+lit.all2 <- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
+
 
 #Isolate fall data
 lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")

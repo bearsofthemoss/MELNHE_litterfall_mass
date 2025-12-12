@@ -9,7 +9,7 @@ library(here)
 
 
 #####
-lit <- read.csv(here::here("data","MELNHE Litterfall massJune2025.csv"))
+lit <- read.csv(here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
 
 lit$Total_Mass <- as.numeric(lit$Total_Mass)
 lit$Leaf_Mass <- as.numeric(lit$Leaf_Mass)
@@ -19,6 +19,19 @@ lit$Total_Mass_g_m2 <- as.numeric(lit$Total_Mass_g_m2)
 
 head(lit)
 
+table(lit$Basket_Type, lit$Basket_Area)
+table(is.na(lit$Basket_Type))
+table(is.na(lit$Basket_Area))
+
+a <- as.data.frame(table(lit$Year, lit$Basket_Type, lit$Stand))
+a <- a[a$Freq>0,]
+ggplot(a, aes(x=Var1, y=Freq, fill=Var2))+
+  facet_wrap(~Var3, nrow=5)+
+  geom_col()+
+#  geom_line(aes(group = Var2))+
+  labs(x="Year",y="Number of baskets",
+       fill = "Basket type")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # will look at species later, for now start with whole basket mass values
 full_baskets <- lit[,c("Lityear","Year","Season","Stand","Plot","Basket",
@@ -125,6 +138,7 @@ head(plot_output)
 # Dashed lines are around what we'd expect for 5 baskets in 4 plots.
 
 # Some years are higher than others?  Could be the Ca plot in C6 and C8?
+plot_output$Season <- factor(plot_output$Season , levels = c("Summer","Spring","Fall"))
 ggplot(plot_output, aes(x=Lityear, y=number_valid,
                         fill=Season))+
   geom_col(position="stack")+
@@ -196,4 +210,6 @@ p2 <- ggplot(c, aes(x = Var1, y = Var2, fill = factor(Freq))) +
   )
 
 print(p2)
+
+
 
