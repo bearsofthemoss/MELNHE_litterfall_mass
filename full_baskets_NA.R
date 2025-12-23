@@ -11,13 +11,45 @@ library(here)
 #####
 lit <- read.csv(here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
 
+a <- as.data.frame(table(is.na(lit$Total_Mass), lit$Season, lit$Year))
+a <- a[a$Freq>0, ]
+head(a)
+
+ggplot(a, aes(x=Var3, y=Freq, fill=Var2))+geom_col(position="stack")+
+  facet_grid(~Var1)
+
 lit$Total_Mass <- as.numeric(lit$Total_Mass)
 lit$Leaf_Mass <- as.numeric(lit$Leaf_Mass)
 lit$Total_Mass_g_m2 <- as.numeric(lit$Total_Mass_g_m2)
 
 # Select the intended columns to reduce confusion.
+table(lit$Year, lit$Season)
 
 head(lit)
+head(lit)
+summary(lit)
+la <- aggregate( list( mass = lit$Total_Mass),
+           by=list(Stand = lit$Stand,
+                   lityear = lit$Year,
+                   season = lit$Season),
+           FUN= "mean", na.rm=T)
+
+dim(la)
+a <- lm( mass ~ as.factor(lityear) + Stand,  data = la[la$season=="Fall",])
+a
+options(scipen=999)
+anova(a)
+
+head(la)
+ggplot( la[la$season=="Fall",] , aes(x=lityear, y= mass))+geom_point()+
+  facet_wrap(~Stand)
+
+t8 <-lit[lit$Year==2008,]
+
+t8[t8$Stand=="HBM",]
+
+table
+table(t8$Stand, t8$Plot)
 
 table(lit$Basket_Type, lit$Basket_Area)
 table(is.na(lit$Basket_Type))
