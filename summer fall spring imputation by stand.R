@@ -446,3 +446,258 @@ p5 <- ggplot(all_comparisons, aes(x = actual, y = imputed, color = stand)) +
   theme_bw()
 
 print(p5)
+
+
+
+#############################
+
+
+
+Take 2???
+  
+  
+  library(mice)
+library(dplyr)
+
+# ============================================================================
+# Stand-Specific MICE Imputation for Complete Dataset
+# ============================================================================
+
+# Parameters
+m_imputations <- 5
+maxit <- 10
+seasons <- c("Summer", "Fall", "Spring")
+
+cat("Starting stand-specific imputation for full dataset...\n")
+cat("Original data dimensions:", nrow(plot_data), "rows\n")
+
+# Count missing values before imputation
+cat("\nMissing values before imputation:\n")
+for (season in seasons) {
+  n_missing <- sum(is.na(plot_data[[season]]))
+  pct_missing <- round(100 * n_missing / nrow(plot_data), 1)
+  cat("  ", season, ":", n_missing, "(", pct_missing, "%)\n")
+}
+
+# Create a copy for imputation
+imputed_data <- plot_data
+
+# Get unique stands
+unique_stands <- unique(plot_data$Stand)
+cat("\nImputing", length(unique_stands), "stands separately...\n\n")
+
+# Track imputation summary
+imputation_summary <- data.frame(
+  stand = character(),
+  n_rows = numeric(),
+  method = character(),
+  summer_imputed = numeric(),
+  fall_imputed = numeric(),
+  spring_imputed = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# ============================================================================
+# Loop through each stand and impute separately
+# ============================================================================
+
+for (stand in unique_stands) {
+  cat("Processing Stand:", stand, "\n")
+  
+  # Extract data for this stand
+  stand_idx <- which(plot_data$Stand == stand)
+  stand_data <- plot_data[stand_idx, ]
+  
+  # Check if this stand has any missing values
+  has_missing <- any(is.na(stand_data$Summer)) | 
+    any(is.na(stand_data$Fall)) | 
+    any(is.na(stand_data$Spring))
+  
+  if (!has_missing) {
+    cat("  No missing values - skipping\n\n")
+    imputation_summary <- rbind(imputation_summary, data.frame(
+      stand = stand,
+      n_rows = nrow(stand_data),
+      method = "none_needed",
+      summer_imputed = 0,
+      fall_imputed = 0,
+      spring_imputed = 0
+    ))
+    next
+  }
+  
+  # Count missing values for this stand
+  n_missing_summer <- sum(is.na(stand_data$Summer))
+  n_missing_fall <- sum(is.na(stand_data$Fall))
+  n_missing_spring <- sum(is.na(stand_data$Spring))
+  
+  cat("  Missing values: Summer =", n_missing_summer, 
+      "| Fall =", n_missing_fall, 
+      "| Spring =", n_missing_spring, "\n")
+  
+  # Check if stand has enough data for MICE (need at least 3 rows)
+  if (nrow(stand_data) < 3) {
+    cat("  Too few observations (", nrow(stand_data), 
+        ") - using mean imputation\n\n")
+    
+    # Mean imputation
+    for (season in seasons) {
+      if (any(is.na(stand_data[[season]]))) {
+        season_mean <- mean(stand_data[[season]], na.rm = TRUE)
+        if (is.nan(season_mean)) {
+          # If no values in this stand for this season, use grand mean
+          season_mean <- mean(plot_data[[season]], na.rm = TRUE)
+          cat("    Using grand mean for", season, ":", round(season_mean, 2), "\n")
+        }
+        stand_data[[season]][is.na(stand_data[[season]])] <- season_mean
+      }
+    }
+    
+    imputed_data[stand_idx, seasons] <- stand_data[, seasons]
+    
+    imputation_summary <- rbind(imputation_summary, data.frame(
+      stand = stand,
+      n_rows = nrow(stand_data),
+      method = "mean",
+      summer_imputed = n_missing_summer,
+      fall_imputed = n_missing_fall,
+      spring_imputed = n_missing_spring
+    ))
+    next
+  }
+  
+  # Prepare data for MICE
+  mice_data <- stand_data[, c("Lityear", "Plot", "Summer", "Fall", "Spring")]
+  
+  # Run MICE imputation
+  tryCatch({
+    cat("  Running MICE...\n")
+    
+    imp <- mice(mice_data, 
+                m = m_imputations, 
+                maxit = maxit, 
+                method = "pmm",
+                seed = 123 + as.numeric(factor(stand)),
+                printFlag = FALSE)
+    
+    # Average across multiple imputations
+    imputed_sum <- mice_data
+    imputed_sum[, seasons] <- 0
+    
+    for (i in 1:m_imputations) {
+      completed_data <- complete(imp, action = i)
+      imputed_sum[, seasons] <- imputed_sum[, seasons] + completed_data[, seasons]
+    }
+    
+    # Calculate average
+    imputed_avg <- imputed_sum[, seasons] / m_imputations
+    
+    # Store imputed values back
+    imputed_data[stand_idx, seasons] <- imputed_avg
+    
+    cat("  MICE complete\n\n")
+    
+    imputation_summary <- rbind(imputation_summary, data.frame(
+      stand = stand,
+      n_rows = nrow(stand_data),
+      method = "MICE",
+      summer_imputed = n_missing_summer,
+      fall_imputed = n_missing_fall,
+      spring_imputed = n_missing_spring
+    ))
+    
+  }, error = function(e) {
+    cat("  ERROR in MICE - falling back to mean imputation\n")
+    cat("  Error message:", e$message, "\n\n")
+    
+    # Fall back to mean imputation
+    for (season in seasons) {
+      if (any(is.na(stand_data[[season]]))) {
+        season_mean <- mean(stand_data[[season]], na.rm = TRUE)
+        if (is.nan(season_mean)) {
+          season_mean <- mean(plot_data[[season]], na.rm = TRUE)
+        }
+        stand_data[[season]][is.na(stand_data[[season]])] <- season_mean
+      }
+    }
+    
+    imputed_data[stand_idx, seasons] <- stand_data[, seasons]
+    
+    imputation_summary <<- rbind(imputation_summary, data.frame(
+      stand = stand,
+      n_rows = nrow(stand_data),
+      method = "mean_fallback",
+      summer_imputed = n_missing_summer,
+      fall_imputed = n_missing_fall,
+      spring_imputed = n_missing_spring
+    ))
+  })
+}
+
+# ============================================================================
+# Summary and Verification
+# ============================================================================
+
+cat("============================================\n")
+cat("IMPUTATION COMPLETE\n")
+cat("============================================\n\n")
+
+cat("Missing values after imputation:\n")
+for (season in seasons) {
+  n_missing <- sum(is.na(imputed_data[[season]]))
+  cat("  ", season, ":", n_missing, "\n")
+}
+cat("\n")
+
+# Summary by method
+cat("Imputation methods used:\n")
+method_summary <- table(imputation_summary$method)
+print(method_summary)
+cat("\n")
+
+# Total values imputed
+cat("Total values imputed by season:\n")
+cat("  Summer:", sum(imputation_summary$summer_imputed), "\n")
+cat("  Fall:  ", sum(imputation_summary$fall_imputed), "\n")
+cat("  Spring:", sum(imputation_summary$spring_imputed), "\n")
+cat("\n")
+
+# Show imputation summary table
+cat("Imputation summary by stand:\n")
+print(imputation_summary)
+
+# ============================================================================
+# Save the imputed dataset
+# ============================================================================
+
+# The complete imputed dataset is now in: imputed_data
+
+# You can save it:
+# write.csv(imputed_data, "imputed_plot_data.csv", row.names = FALSE)
+
+#Or compare original vs imputed:
+comparison <- data.frame(
+  plot_id = plot_data$plot_id,
+  original_summer = plot_data$Summer,
+  imputed_summer = imputed_data$Summer,
+  original_fall = plot_data$Fall,
+  imputed_fall = imputed_data$Fall,
+  original_spring = plot_data$Spring,
+  imputed_spring = imputed_data$Spring
+)
+
+comparison
+# # Show only rows where imputation occurred
+# imputed_rows <- comparison[is.na(comparison$original_summer) | 
+#                            is.na(comparison$original_fall) | 
+#                            is.na(comparison$original_spring), ]
+# print(head(imputed_rows, 20))
+
+imputed_data$total <- imputed_data$Fall+imputed_data$Summer+imputed_data$Spring
+
+
+ggplot(imputed_data, aes(x= Lityear, y= total))+geom_point()+
+  geom_line(aes(group=Plot))+facet_wrap(~Stand)+
+  geom_smooth(method="lm")
+
+anova(lm( total ~ Lityear+Stand, data=imputed_data))

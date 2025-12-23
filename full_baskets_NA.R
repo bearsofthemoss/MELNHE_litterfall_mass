@@ -11,6 +11,9 @@ library(here)
 #####
 lit <- read.csv(here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
 
+ggplot(lit, aes(x= Leaf_Mass, y= Total_Mass, col=Sorted))+geom_point()+
+  facet_wrap(~Season, scales="free")
+
 a <- as.data.frame(table(is.na(lit$Total_Mass), lit$Season, lit$Year))
 a <- a[a$Freq>0, ]
 head(a)

@@ -5,13 +5,29 @@ library(here)
 #####
 lit <- read.csv(here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
 
+
 lit$Total_Mass <- as.numeric(lit$Total_Mass_g_m2)
+f <- lit[lit$Season=="Fall","Total_Mass"]
+s <- lit[lit$Season=="Spring","Total_Mass"]
+
+
+length(f)
+length(s)
+plot( , lit[lit$Season=="Spring","Total_Mass"] )
+
+
 lit <- lit[lit$Season=="Fall",]
 
 # Load your data
 
 # ===== STEP 1: Create basket ID and identify species columns =====
 lit$basket_id <- paste(lit$Stand, lit$Plot, lit$Basket, sep = "_")
+
+a <- as.data.frame(table(lit$basket_id, lit$Stand))
+a <- a[a$Freq>0,]
+table(a$Freq, a$Var2)
+
+
 
 # Identify species columns (adjust pattern if needed)
 # Assuming species columns are uppercase codes like ACPE, ACRU, ACSA3, ASSP2
