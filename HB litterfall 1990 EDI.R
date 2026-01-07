@@ -153,7 +153,67 @@ ggplot(dt1[dt1$DRY_MASS>0 & dt1$DRY_MASS <100, ],
        aes(x=YEAR, y= DRY_MASS ))+
   geom_boxplot(aes(group = YEAR))
 
+table(dt1$SITE, dt1$YEAR)
 
-hist(dt1[dt1$DRY_MASS>0, "DRY_MASS"], breaks=1000,
-     xlab="Dry litterfall mass (g)", main = "HB fine litterfall 1990-2025")
+dim(dt1)
 
+l <- dt1
+l$id <- paste(l$SITE, l$COMP, l$YEAR,l$ELEV, l$DATE, l$TAG)
+
+l$g_m2 <- l$DRY_MASS/.1
+
+ l[ l$TAG=="pooled","DRY_MASS"] <- NA
+
+
+
+summary(l$DRY_MASS)
+
+
+c <- as.data.frame(table(l$id))
+c[c$Freq>1,]
+
+
+l[l$id %in% c("TF 2013 Low 2013-08 10",
+              "W1 1999 High 1999-11 1",
+              "W1 1999 High 1999-11 10"),]
+
+
+a <- as.data.frame(table(l$id, l$YEAR))
+a <- a[a$Freq>0,]
+table(a$Freq)
+dual <- a[a$Freq==2,]
+
+
+l[l$id %in% dual$Var1, ]
+
+head(l)
+l[l$g_m2>3000,]
+
+length(unique(l$id))
+dim(l)
+
+l <- l[!is.na(l$g_m2),]
+
+ggplot( l[l$g_m2 < 800   , ], aes(x=YEAR, y=g_m2))+
+  geom_point()+
+  geom_line(aes(group= TAG ))+
+  facet_grid(ELEV~SITE)
+
+
+
+ggplot( l[l$SITE == "BB"   , ], aes(x=YEAR, y=g_m2))+
+  geom_point()+
+  geom_line(aes(group= TAG ))+
+  facet_grid(ELEV~SITE)
+
+
+h <- l[l$g_m2 < 1000, ]
+
+y <- aggregate( h$g_m2,
+           by=list( 
+             Site = h$SITE,
+             year = h$YEAR),
+           FUN="median", na.rm=T)
+
+
+ggplot(y, aes(x= year, y= x))+geom_point()+geom_line(aes(group=Site))

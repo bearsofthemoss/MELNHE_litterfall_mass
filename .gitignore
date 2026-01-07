@@ -49,3 +49,6 @@ po/*~
 rsconnect/
 *.png
 *.csv
+/MELNHE Fall Error Checking Graphs Quarto_files/libs
+*.js
+*.pptx

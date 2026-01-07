@@ -1,10 +1,18 @@
 ---
 title: "MELNHE Fall Error Checking Graphs"
-format: revealjs
+format: 
+  pptx:
+    fig-width: 13
+    fig-height: 8.5
 editor: visual
 ---
 
+
 ```{r}
+#| include: false
+#| message: false
+#| warning: false
+
 
 #Install packages:
 library(ggplot2)
@@ -15,46 +23,166 @@ library(RColorBrewer)
 # FALL GRAPHS
 
 #Import data
-lit.all2 <- read.csv("C:/Users/ssonoknowles/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI.csv") #This is the csv of the "Master Data Sheet" in the EDI file
+lit.all2 <- read.csv(here::here("data","MELNHE Litterfall EDI Data - December.csv"))
 
+
+
+table(lit.all2$Stand, lit.all2$Lityear)
 
 #Isolate fall data
 lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")
 
+
+ names(lit.fall.sort2)
 #Convert to long form
-lgf2<- gather(lit.fall.sort2[,c(1:41)], "SP","mass",c(18:41))
+lgf2<- gather(lit.fall.sort2[,c(1:35)], "SP","mass",c(14:35))
 lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
 lgf2$Year<-as.factor(lgf2$Year)
 lgf2$mass<-as.numeric(lgf2$mass)
 
-#Pick a color palette
-n <- 27 # 19 is for 19 'species'
-qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
-col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
-litcol<-col_vector
+
+# deal with species
+
+lgf2[lgf2$SP== "PRSE2", "SP"] <- "PRPE2"
+lgf2[lgf2$SP== "PIRU", "SP"] <- "TSCA"
+lgf2[lgf2$SP== "BEPO", "SP"] <- "BEPA"
+lgf2[lgf2$SP== "POGR4", "SP"] <- "PO_sp"
+lgf2[lgf2$SP== "POTR5", "SP"] <- "PO_sp"
+lgf2[lgf2$SP== "BE_sp", "SP"] <- "BEPA"
+
+
+lgf2[lgf2$SP== "TSCA", "SP"] <- "Unknown"
+
+uncommon_sp <- c("ACSP2","ACPE", "FRAM2","QURU","SOAM3","TIAM","PO_sp")
+
+
+common_sp <- c("BEAL2","BEPA", "FAGR2","PRPE2","ACRU","ACSA3","VILA11")
+
+
+lgf2[lgf2$SP %in% common_sp , "Common"] <- "Major species"
+
+lgf2 <- lgf2[ , c("Lityear","Site","Stand","Plot","Basket","Basket_Area",
+                  "SP","mass","staplo")]
+
+# unsorted <- subset(lit.all2, Season == "Fall" & Sorted == "N")
+# unsorted$SP <- "total mass"
+# unsorted$staplo <- paste(unsorted$Stand, unsorted$Plot)
+# unsorted$mass <- as.numeric( unsorted$Total_Mass)
+# unsorted <- unsorted[ , c("Lityear","Site","Stand","Plot","Basket","Basket_Area",
+#                   "SP","mass","staplo")]
+
+str(lgf2)
+#lgf2 <- rbind(unsorted, lgf2)
+
+lgf2$Year <- as.factor(lgf2$Lityear)
+
+
+#Pick a color palette
+#install.packages("pals")
+library(pals)
+
+n <- length(unique(lgf2$SP))
+litcol <- as.character(pals::polychrome(n))
 
 #streamline the basket labels so that there are only five
-#This line is for all stands except for HBM, HBO, and JBM!!!!
-simp_baskets <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="C3","1"="A1","2"="A3","3"="B2","4"="C1","5"="C3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","C3"="C3")
+lgf2[lgf2$Basket==1, "Basket"] <- "A1"
+lgf2[lgf2$Basket==2, "Basket"] <- "A3"
+lgf2[lgf2$Basket==3, "Basket"] <- "B2"
+lgf2[lgf2$Basket==4, "Basket"] <- "C1"
+lgf2[lgf2$Basket==5, "Basket"] <- "C3"
 
-lgf2$Basket <- simp_baskets[as.character(lgf2$Basket)]
+lgf2[lgf2$Basket=="LF1", "Basket"] <- "1"
+lgf2[lgf2$Basket=="LF2", "Basket"] <- "2"
+lgf2[lgf2$Basket=="LF3", "Basket"] <- "3"
+lgf2[lgf2$Basket=="LF4", "Basket"] <- "4"
+lgf2[lgf2$Basket=="LF5", "Basket"] <- "5"
 
-#This line is for only HBM and JBM!
-simp_baskets_HBM_JBM <- c("LF1"="A1","LF2"="A2","LF3"="CENTER","LF4"="B1","LF5"="B2","1"="A1","2"="A2","3"="CENTER","4"="B1","5"="B2","A1"="A1","A2"="A2","CENTER"="CENTER","B1"="B1","B2"="B2")
 
-#This line is for only HBO!
-simp_baskets_HBO <- c("LF1"="A1","LF2"="A3","LF3"="B2","LF4"="C1","LF5"="Y3","1"="A1","2"="A3","3"="B2","4"="C1","5"="Y3","A1"="A1","A3"="A3","B2"="B2","C1"="C1","Y3"="Y3")
+##########################################
+# Bartlett baskets
+BART <- lgf2[lgf2$Site=="BEF",]
 
-# First, make Year a factor in correct order
-lgf2$Year <- factor(lgf2$Year, levels = sort(unique(as.numeric(as.character(lgf2$Year)))))
+BART[BART$Basket=="A1", "Basket"] <- "1"
+BART[BART$Basket=="A3", "Basket"] <- "2"
+BART[BART$Basket=="B2", "Basket"] <- "3"
+BART[BART$Basket=="C1", "Basket"] <- "4"
+BART[BART$Basket=="C3", "Basket"] <- "5"
 
-# Subset
-df_sub <- lgf2[lgf2$staplo == "C1 1",]
+table(BART$Stand, BART$Basket)
+
+##########################################
+# HB baskets
+HBM <- lgf2[lgf2$Stand== "HBM",]
+
+table(HBM$Lityear, HBM$Basket)
+HBM[HBM$Basket=="A1", "Basket"] <- "1"
+HBM[HBM$Basket=="A2", "Basket"] <- "2"
+HBM[HBM$Basket=="CENTER", "Basket"] <- "3"
+HBM[HBM$Basket=="B1", "Basket"] <- "4"
+HBM[HBM$Basket=="B2", "Basket"] <- "5"
+table(HBM$Lityear, HBM$Basket)
+
+#############
+HBO <- lgf2[lgf2$Stand=="HBO",]
+
+
+table(HBO$Lityear, HBO$Basket)
+HBO[HBO$Basket=="Y3", "Basket"] <- "5"
+
+HBO[HBO$Basket=="A1", "Basket"] <- "1"
+HBO[HBO$Basket=="A3", "Basket"] <- "2"
+HBO[HBO$Basket=="B1", "Basket"] <- "3"
+HBO[HBO$Basket=="B2", "Basket"] <- "3"
+HBO[HBO$Basket=="C1", "Basket"] <- "4"
+HBO[HBO$Basket=="C3", "Basket"] <- "5"
+
+table(HBO$Lityear, HBO$Basket)
+
+
+##########################################
+# JB baskets
+JBM <- lgf2[lgf2$Stand=="JBM",]
+table(JBM$Lityear, JBM$Basket)
+JBM[JBM$Basket=="A1", "Basket"] <- "1"
+JBM[JBM$Basket=="A2", "Basket"] <- "2"
+JBM[JBM$Basket=="CENTER", "Basket"] <- "3"
+JBM[JBM$Basket=="B1", "Basket"] <- "4"
+JBM[JBM$Basket=="B2", "Basket"] <- "5"
+
+table(JBM$Lityear, JBM$Basket)
+
+
+JBO <- lgf2[lgf2$Stand=="JBO",]
+table(JBO$Lityear, JBO$Basket)
+
+JBO[JBO$Basket=="A1", "Basket"] <- "1"
+JBO[JBO$Basket=="A3", "Basket"] <- "2"
+JBO[JBO$Basket=="B2", "Basket"] <- "3"
+JBO[JBO$Basket=="C1", "Basket"] <- "4"
+JBO[JBO$Basket=="C3", "Basket"] <- "5"
+table(JBO$Lityear, JBO$Basket)
+
+
+# BART$Year <- as.numeric(BART$Year)
+# BART$Year <- factor(BART$Year, levels = sort(unique(as.numeric(as.character(BART$Year)))))
+# BART$Year <- factor(BART$Year, levels = sort(unique(as.numeric(as.character(BART$Year)))))
+# BART$Year <- factor(BART$Year, levels = sort(unique(as.numeric(as.character(BART$Year)))))
+# BART$Year <- factor(BART$Year, levels = sort(unique(as.numeric(as.character(BART$Year)))))
+
+
+
+```
+
+------------------------------------------------------------------------
+```{r}
+# SubsetR
+df_sub <-BART[BART$staplo == "C1 1",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
-ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
@@ -62,19 +190,19 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C1 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept =  c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 ```
 
-------------------------------------------------------------------------
 
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C1 2",]
+df_sub <-BART[BART$staplo == "C1 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
-ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+ggplot(df_sub[df_sub$SP!="total mass",], aes(x = Year, y = mass, fill = SP)) +
+  geom_point(data=df_sub[df_sub$SP=="total mass",], aes(x = Year, y = mass))+
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
@@ -82,18 +210,20 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C1 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept =  c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C1 3",]
+df_sub <-BART[BART$staplo == "C1 3",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
-ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+ggplot(df_sub[df_sub$SP!="total mass",], aes(x = Year, y = mass, fill = SP)) +
+  geom_point(data=df_sub[df_sub$SP=="total mass",], aes(x = Year, y = mass))+
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
@@ -101,18 +231,19 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C1 3 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept =  c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C1 4",]
+df_sub <-BART[BART$staplo == "C1 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
-ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) + 
+ggplot(df_sub[df_sub$SP!="total mass",], aes(x = Year, y = mass, fill = SP)) +
+  geom_point(data=df_sub[df_sub$SP=="total mass",], aes(x = Year, y = mass))+
   geom_bar(stat = "identity", col = "black") + 
   theme_bw() +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
@@ -120,7 +251,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C1 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept =  c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -128,7 +259,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C2 1",]
+df_sub <-BART[BART$staplo == "C2 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -147,7 +278,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C2 2",]
+df_sub <-BART[BART$staplo == "C2 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -166,7 +297,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C2 3",]
+df_sub <-BART[BART$staplo == "C2 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -185,7 +316,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C2 4",]
+df_sub <-BART[BART$staplo == "C2 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -197,7 +328,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C2 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -205,7 +336,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C3 1",]
+df_sub <-BART[BART$staplo == "C3 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -217,14 +348,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C3 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C3 2",]
+df_sub <-BART[BART$staplo == "C3 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -236,14 +367,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C3 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C3 3",]
+df_sub <-BART[BART$staplo == "C3 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -255,14 +386,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C3 3 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C3 4",]
+df_sub <-BART[BART$staplo == "C3 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -280,7 +411,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C4 1",]
+df_sub <-BART[BART$staplo == "C4 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -299,7 +430,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C4 2",]
+df_sub <-BART[BART$staplo == "C4 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -318,7 +449,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C4 3",]
+df_sub <-BART[BART$staplo == "C4 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -337,7 +468,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C4 4",]
+df_sub <-BART[BART$staplo == "C4 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -349,7 +480,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C4 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -357,7 +488,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C5 1",]
+df_sub <-BART[BART$staplo == "C5 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -369,14 +500,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C5 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C5 2",]
+df_sub <-BART[BART$staplo == "C5 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -388,14 +519,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C5 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C5 3",]
+df_sub <-BART[BART$staplo == "C5 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -407,14 +538,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C5 3 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C5 4",]
+df_sub <-BART[BART$staplo == "C5 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -432,7 +563,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C6 1",]
+df_sub <-BART[BART$staplo == "C6 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -451,7 +582,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C6 2",]
+df_sub <-BART[BART$staplo == "C6 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -470,7 +601,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C6 3",]
+df_sub <-BART[BART$staplo == "C6 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -489,7 +620,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C6 4",]
+df_sub <-BART[BART$staplo == "C6 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -501,7 +632,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C6 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -509,7 +640,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C7 1",]
+df_sub <-BART[BART$staplo == "C7 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -521,14 +652,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C7 1 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C7 2",]
+df_sub <-BART[BART$staplo == "C7 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -540,14 +671,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C7 2 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C7 3",]
+df_sub <-BART[BART$staplo == "C7 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -559,14 +690,14 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C7 3 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C7 4",]
+df_sub <-BART[BART$staplo == "C7 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -576,7 +707,9 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   facet_wrap(~Basket, scales = "fixed", nrow = 2) +
   scale_fill_manual(values = litcol[1:length(unique(df_sub$SP))]) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
-  ggtitle("Stand C7 4 over the years")
+  ggtitle("Stand C7 4 over the years")+
+  # Add vertical separator lines BETWEEN certain years
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -584,7 +717,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C8 1",]
+df_sub <-BART[BART$staplo == "C8 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -603,7 +736,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C8 2",]
+df_sub <-BART[BART$staplo == "C8 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -622,7 +755,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C8 3",]
+df_sub <-BART[BART$staplo == "C8 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -641,7 +774,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C8 4",]
+df_sub <-BART[BART$staplo == "C8 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -653,7 +786,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C8 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
@@ -661,7 +794,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C9 1",]
+df_sub <-BART[BART$staplo == "C9 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -680,7 +813,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C9 2",]
+df_sub <-BART[BART$staplo == "C9 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -699,7 +832,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C9 3",]
+df_sub <-BART[BART$staplo == "C9 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -718,7 +851,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "C9 4",]
+df_sub <-BART[BART$staplo == "C9 4",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -730,16 +863,16 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand C9 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
-lgf2$Basket <- simp_baskets_HBM_JBM[as.character(lgf2$Basket)]
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBM 1",]
+df_sub <- HBM[HBM$staplo == "HBM 1",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -758,7 +891,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBM 2",]
+df_sub <- HBM[HBM$staplo == "HBM 2",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -777,7 +911,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBM 3",]
+df_sub <- HBM[HBM$staplo == "HBM 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -796,7 +930,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBM 4",]
+df_sub <- HBM[HBM$staplo == "HBM 4",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -808,17 +943,15 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand HBM 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 
-lgf2$Basket <- simp_baskets_HBO[as.character(lgf2$Basket)]
-
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBO 1",]
+df_sub <- HBO[HBO$staplo == "HBO 1",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -837,7 +970,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBO 2",]
+df_sub <- HBO[HBO$staplo == "HBO 2",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -856,7 +989,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBO 3",]
+df_sub <- HBO[HBO$staplo == "HBO 3",]
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -875,7 +1008,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "HBO 4",]
+df_sub <- HBO[HBO$staplo == "HBO 4",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -887,17 +1021,17 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand HBO 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 
-lgf2$Basket <- simp_baskets_HBM_JBM[as.character(lgf2$Basket)]
 
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBM 1",]
+df_sub <- JBM[JBM$staplo == "JBM 1",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -916,7 +1050,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBM 2",]
+df_sub <- JBM[JBM$staplo == "JBM 2",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -935,7 +1070,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBM 3",]
+df_sub <- JBM[JBM$staplo == "JBM 3",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -954,7 +1090,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBM 4",]
+df_sub <- JBM[JBM$staplo == "JBM 4",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -966,17 +1103,16 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand JBM 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
 
 ```{r}
 
-lgf2$Basket <- simp_baskets[as.character(lgf2$Basket)]
-
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBO 1",]
+df_sub <- JBO[JBO$staplo == "JBO 1",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -995,7 +1131,9 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBO 2",]
+df_sub <- JBO[JBO$staplo == "JBO 2",]
+
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -1014,7 +1152,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBO 3",]
+df_sub <- JBO[JBO$staplo == "JBO 3",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -1033,7 +1172,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 
 ```{r}
 # Subset
-df_sub <- lgf2[lgf2$staplo == "JBO 4",]
+df_sub <- JBO[JBO$staplo == "JBO 4",]
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -1045,7 +1185,5 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand JBO 4 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5, 4.5), linetype = "dashed", color = "red", linewidth = 1)
 ```
-
-------------------------------------------------------------------------

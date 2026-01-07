@@ -6,7 +6,7 @@
 #####
 lit <- read.csv(here::here("data","MELNHE Litterfall mass_Nov2025.csv"))
 
-
+names(lit)
 ## How predictable is the seasonal litterfall in 13 stands?
 
 lit$Total_Mass <- as.numeric(lit$Total_Mass_g_m2)
