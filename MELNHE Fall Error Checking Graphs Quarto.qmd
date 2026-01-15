@@ -33,7 +33,105 @@ table(lit.all2$Stand, lit.all2$Lityear)
 lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")
 
 
- names(lit.fall.sort2)
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & lit.fall.sort2$Stand == "C2" &
+               lit.fall.sort2$Plot=="2" & lit.fall.sort2$Basket=="2",] <- "A3"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & lit.fall.sort2$Stand == "C2" &
+               lit.fall.sort2$Plot=="2" & lit.fall.sort2$Basket=="5",] <- "A1"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "C2" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="2",] <- "A3"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "C2" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="5",] <- "A1"
+
+#### C4 plot 3
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "C4" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="3",] <- "A3"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "C4" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="4",] <- "B2"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "C4" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="3",] <- "A3"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "C4" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="4",] <- "B2"
+
+
+## HBM 2
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="1",] <- "A1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="3",] <- "B2"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="1",] <- "A1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="2" 
+               & lit.fall.sort2$Basket=="3",] <- "B2"
+
+## HBM 3
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="2",] <- "A1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="3",] <- "A2"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="2",] <- "A1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="3",] <- "A2"
+
+## HBM 4
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="A1",] <- "1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="CENTER",] <- "5"
+
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="A1",] <- "1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBM" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="CENTER",] <- "5"
+
+## HBO 1
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBO" & lit.fall.sort2$Plot=="1" 
+               & lit.fall.sort2$Basket=="A3",] <- "4"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBO" & lit.fall.sort2$Plot=="1" 
+               & lit.fall.sort2$Basket=="A3",] <- "4"
+
+## HBO 3
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBO" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="2",] <- "C1"
+lit.fall.sort2[lit.fall.sort2$Lityear=="2010" & 
+                 lit.fall.sort2$Stand == "HBO" & lit.fall.sort2$Plot=="3" 
+               & lit.fall.sort2$Basket=="2",] <- "C1"
+
+
+## test specific years baskets
+lit.fall.sort2[lit.fall.sort2$Lityear=="2009" & 
+                 lit.fall.sort2$Stand == "HBO" & lit.fall.sort2$Plot=="3",]
+
+ 
+names(lit.fall.sort2)
 #Convert to long form
 lgf2<- gather(lit.fall.sort2[,c(1:35)], "SP","mass",c(14:35))
 lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
@@ -97,6 +195,10 @@ lgf2[lgf2$Basket=="LF2", "Basket"] <- "2"
 lgf2[lgf2$Basket=="LF3", "Basket"] <- "3"
 lgf2[lgf2$Basket=="LF4", "Basket"] <- "4"
 lgf2[lgf2$Basket=="LF5", "Basket"] <- "5"
+
+
+###################
+
 
 
 ##########################################
@@ -279,6 +381,8 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
 ```{r}
 # Subset
 df_sub <-BART[BART$staplo == "C2 2",]
+
+
 
 # Create plot
 #baskets may not correspond with other baskets in the same panel across red dotted line
@@ -1001,7 +1105,7 @@ ggplot(df_sub, aes(x = Year, y = mass, fill = SP)) +
   theme(axis.text.x = element_text(angle = 90, vjust = .5)) +
   ggtitle("Stand HBO 3 over the years") +
   # Add vertical separator lines BETWEEN certain years
-  geom_vline(xintercept = c(3.5), linetype = "dashed", color = "red", size = 1)
+  geom_vline(xintercept = c(2.5), linetype = "dashed", color = "red", size = 1)
 ```
 
 ------------------------------------------------------------------------
