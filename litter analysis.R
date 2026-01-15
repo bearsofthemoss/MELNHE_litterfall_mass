@@ -120,4 +120,3 @@ no_N <- pm[pm$Ntrmt=="NoN",]
 
 anova(lmer( mass ~ Lityear + (1|Stand), data=no_N))
 lmer( mass ~ Lityear + (1|Stand), data=no_N)
-

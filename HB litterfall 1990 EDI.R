@@ -144,24 +144,28 @@ summary(as.factor(dt1$TAG))
 summary(as.factor(dt1$COMMENT))
 detach(dt1)               
 
-
+# rename for convenience
 l <- dt1
+
+# create ID for each record
 l$id <- paste(l$SITE, l$COMP, l$YEAR,l$ELEV, l$DATE, l$TAG)
 
+# View boxplots
+ggplot(l, aes(x=YEAR, y=g_m2))+geom_boxplot(aes(group=YEAR))+
+  facet_grid(COMP ~ SITE)
 
-ggplot(l, aes(x=YEAR, y=g_m2))+geom_boxplot(aes(group=YEAR))
-
-# For all columns
+# convert -999 values to NA
 l[l == -999] <- NA
 
-
+# convert mass to g/m2
 l$g_m2 <- l$DRY_MASS/.097
 
-summary(l$g_m2)
+#summary(l$g_m2)
 
-
+# some years were pooled?  ignore.
 l <- l[ !l$TAG=="pooled",]
 
+# View dist
 hist(l$g_m2, breaks=200)
 
 # Remove small values
@@ -171,47 +175,138 @@ l <- l[l$g_m2 > 0,]
 l <- l[l$g_m2 < 1000,]
 
 
-# c <- as.data.frame(table(l$id))
-# c[c$Freq>1,]
-# 
-# l[l$id %in% c("TF 2013 Low 2013-08 10",
-#               "W1 1999 High 1999-11 1",
-#               "W1 1999 High 1999-11 10"),]
-# 
-# a <- as.data.frame(table(l$id, l$YEAR))
-# a <- a[a$Freq>0,]
-# table(a$Freq)
-# dual <- a[a$Freq==2,]
-# 
-# l[l$id %in% dual$Var1, ]
-# 
-# length(unique(l$id))
-# dim(l)
-# 
-# l <- l[!is.na(l$g_m2),]
 
-
-W1 <- l[l$SITE=="W1",]
-
-table(W1$YEAR, W1$ELEV)
-
-df <- l
-g <- aggregate(df$g_m2,
+# Average to the elevation-site-year level
+year_sum  <- aggregate(list(g_m2 =l$g_m2),
           by=list(
-            YEAR = df$YEAR,
-                   SITE=df$SITE,
-                   ELEV = df$ELEV),
-          FUN="mean", na.rm=T)
+            YEAR = l$YEAR,
+                   SITE= l$SITE,
+                   ELEV = l$ELEV,
+                   TAG = l$TAG),
+          FUN="sum", na.rm=T)
 
-ggplot(g, aes(x=YEAR,y= x, col=ELEV))+
+site_avg <- aggregate(list(g_m2 =year_sum$g_m2),
+                      by=list(
+                        YEAR = year_sum$YEAR,
+                        SITE= year_sum$SITE,
+                        ELEV = year_sum$ELEV),
+                      FUN="mean", na.rm=T)
+
+
+
+
+
+
+ggplot(site_avg, aes(x=YEAR,y= g_m2, col=ELEV))+
   geom_point()+
   geom_line()+
   labs(x="Year", y="Litterfall mass (g/m2)",
        col="Elevation")+
-  facet_wrap(~SITE, nrow=4)
+  geom_hline(yintercept=210)+
+  facet_wrap(~SITE, nrow=2)
 
 
 library(lme4)
 library(lmerTest)
+library(emmeans)
 
-lmer( g_m2 ~ YEAR + (1 | SITE), data = g)
+# Simple mixed effect model
+mod <- lmer( g_m2 ~ YEAR   + (1|ELEV), data = site_avg[site_avg$SITE=="BB",])
+mod
+anova(mod)
+mod <- lmer( g_m2 ~ YEAR   + (1|ELEV), data = site_avg[site_avg$SITE=="BB",])
+
+
+
+library(ggplot2)
+library(emmeans)
+
+# Get your trend
+trend <- emtrends(mod, ~ 1, var = "YEAR")
+
+# Extract the slope and confidence intervals
+trend_summary <- summary(trend)
+slope <- trend_summary$YEAR.trend
+
+# Get predictions from the model
+# Create a prediction dataset
+pred_data <- data.frame(
+  YEAR = seq(min(site_avg[site_avg$SITE=="BB",]$YEAR), 
+             max(site_avg[site_avg$SITE=="BB",]$YEAR), 
+             length.out = 100)  # Use mean elevation for prediction
+)
+
+# Get predictions
+pred_data$predicted <- predict(mod, newdata = pred_data, re.form = NA)
+
+# Create the plot
+ggplot() +
+  # Raw data points
+  geom_point(data = site_avg[site_avg$SITE=="BB",], 
+             aes(x = YEAR, y = g_m2, color = factor(ELEV)), 
+             alpha = 0.6, size = 2) +
+  # Model prediction line (fixed effect)
+  geom_line(data = pred_data, 
+            aes(x = YEAR, y = predicted), 
+            color = "blue", linewidth = 1.2) +
+  labs(x = "Year", 
+       y = expression(g/m^2),
+       color = "Elevation",
+       title = "Litterfall Mass Over Time",
+       subtitle = paste0("Slope: ", round(slope, 3), " g/m²/year")) +
+  theme_minimal()
+
+
+
+head(l)
+names(l)
+l$total_count <-  l$a_COUNT+ l$B_COUNT+ l$f_COUNT + l$M_COUNT +
+  l$P_COUNT+ l$Q_COUNT + l$W_COUNT + l$Y_COUNT + l$t_COUNT
+
+l$count_g <- l$total_count / l$DRY_MASS
+
+
+ggplot(l, aes(x=YEAR, y= count_g ))+
+  geom_boxplot( aes(group=YEAR))
+
+
+
+# Average to the elevation-site-year level
+year_sum  <- aggregate(list(count_g =l$count_g),
+                       by=list(
+                         YEAR = l$YEAR,
+                         SITE= l$SITE,
+                         ELEV = l$ELEV,
+                         TAG = l$TAG),
+                       FUN="sum", na.rm=T)
+
+site_avg <- aggregate(list(count_g =year_sum$count_g),
+                      by=list(
+                        YEAR = year_sum$YEAR,
+                        SITE= year_sum$SITE,
+                        ELEV = year_sum$ELEV),
+                      FUN="mean", na.rm=T)
+
+
+ggplot(site_avg, aes(x=YEAR,y= count_g, col=ELEV))+
+  geom_point()+
+  geom_line()+
+  labs(x="Year", y="Litterfall mass (g/m2)",
+       col="Elevation")+
+  facet_wrap(~SITE, nrow=2)
+
+
+## lower mass per unit area.
+
+s <- aggregate(site_avg$count_g, by=list(
+  year = site_avg$YEAR,
+  SITE = site_avg$SITE
+), FUN="mean", na.rm=T)
+
+s <- s[s$x>0,]
+s
+ss <- tidyr::spread(s, "SITE" ,"x")
+??spread()
+
+
+
