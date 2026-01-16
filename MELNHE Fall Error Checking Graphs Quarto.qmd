@@ -183,6 +183,8 @@ library(pals)
 n <- length(unique(lgf2$SP))
 litcol <- as.character(pals::polychrome(n))
 
+lgf2$og_basket <- lgf2$Basket
+
 #streamline the basket labels so that there are only five
 lgf2[lgf2$Basket==1, "Basket"] <- "A1"
 lgf2[lgf2$Basket==2, "Basket"] <- "A3"
@@ -199,7 +201,16 @@ lgf2[lgf2$Basket=="LF5", "Basket"] <- "5"
 
 ###################
 
-
+# to identify the negatives
+# negatives <- lgf2[lgf2$mass<0,]
+# negatives$basket_id <- paste(negatives$Lityear, negatives$staplo, negatives$og_basket)
+# negatives <- negatives[!is.na(negatives$mass),]
+# negatives <- negatives[order(negatives$mass),]
+# head(negatives)
+# unique(negatives$basket_id)
+# 
+# write.csv(negatives[ , c("Lityear","Stand","Plot","og_basket","SP","mass","basket_id"),],
+#           file= "Negative basket masses.csv")
 
 ##########################################
 # Bartlett baskets
