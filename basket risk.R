@@ -16,7 +16,8 @@ table(br$risk.level)
 table(br$new.risk.level)
 
 # visualize risk score by plot in each stand
-ggplot(br, aes(x=plot, y=new.risk.level, fill=as.factor(new.risk.level)))+
+ggplot(br, aes(x=plot, y=new.risk.level, 
+    fill=as.factor(new.risk.level)))+
   geom_col(aes(group=plot), col="black")+
   facet_wrap(~stand)+
   theme_bw()+
@@ -24,7 +25,15 @@ ggplot(br, aes(x=plot, y=new.risk.level, fill=as.factor(new.risk.level)))+
   labs(x="New risk score", y="Plot",
        fill="Risk score ")
 
+table(br$stand, br$plot)
+head(br)
+br$risk.level <- as.numeric(br$risk.level)
 
+raaa <- aggregate(br$risk.level, by= list(br$stand, br$plot),FUN="median", na.rm=T )
+table(raaa$x)
+
+hist(br$risk.level, breaks=100)
+ggplot(br, aes(x=))
 
 
 br$new.risk.level <- as.numeric(br$new.risk.level)
