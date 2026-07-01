@@ -20,14 +20,11 @@ library(tidyr)
 library(gridExtra)
 library(RColorBrewer)
 
-# FALL GRAPHS
+lit.all2 <- read.csv("D:/Users/bears/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI(6).csv")
 
-#Import data
-lit.all2 <- read.csv(here::here("data","MELNHE Litterfall EDI Data - December.csv"))
+lit.all2$Basket
 
-
-
-
+table(lit.all2$Year, lit.all2$Basket)
 
 table(lit.all2$Stand, lit.all2$Lityear)
 
@@ -162,6 +159,7 @@ common_sp <- c("BEAL2","BEPA", "FAGR2","PRPE2","ACRU","ACSA3","VILA11")
 
 lgf2[lgf2$SP %in% common_sp , "Common"] <- "Major species"
 
+names(lgf2)
 lgf2 <- lgf2[ , c("Lityear","Site","Stand","Plot","Basket","Basket_Area",
                   "SP","mass","staplo")]
 

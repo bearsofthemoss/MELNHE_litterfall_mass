@@ -67,12 +67,12 @@ lf <- lf[lf$Season=="Fall",]
 
 # Add baskets together
 pm <- aggregate(list( mass = lf$g_m2),
-          by=list(Stand = lf$Stand,
-                  Lityear = lf$Lityear,
-                  Plot = lf$Plot,
-                
-                  Season = lf$Season),
-          FUN="median", na.rm=T)
+                by=list(Stand = lf$Stand,
+                        Lityear = lf$Lityear,
+                        Plot = lf$Plot,
+                        
+                        Season = lf$Season),
+                FUN="median", na.rm=T)
 
 # pm <- aggregate(list( mass = pl$mass),
 #                 by=list(Stand = pl$Stand,
@@ -127,11 +127,11 @@ pm <- pm[!pm$Treatment == "Ca",]
 ggplot( pm, aes(x=Lityear, y=mass))+
   geom_smooth( method="lm", se=F,alpha= .1,
                aes(group=Treatment, col=Treatment))+
- # geom_point( aes( col=Treatment))+
-#  geom_line( aes(group=staplo))+
+  # geom_point( aes( col=Treatment))+
+  #  geom_line( aes(group=staplo))+
   scale_color_manual(values=c("black","blue","red","purple"))+
   facet_wrap(~ Stand, ncol=4)+
-
+  
   labs(x="Year", y="Litterfall g/m2")+
   theme_bw()
 
