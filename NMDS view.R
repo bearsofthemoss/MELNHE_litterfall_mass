@@ -1,7 +1,7 @@
 library(ggplot2)
 library(tidyr)
 #Import data
-lit.all2 <- read.csv(here::here("data","MELNHE Litterfall EDI Data - December.csv"))
+lit.all2 <- read.csv(here::here("data","MELNHE Litterfall EDI Data June2026.csv"))
 
 
 
@@ -13,12 +13,13 @@ lit.fall.sort2<-subset(lit.all2, Season == "Fall" & Sorted == "Y")
 
 names(lit.fall.sort2)
 #Convert to long form
-lgf2<- gather(lit.fall.sort2[,c(1:35)], "SP","mass",c(14:35))
+lgf2<- tidyr::gather(lit.fall.sort2[,c(1:40)], "SP","mass",c(17:40))
 lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
 lgf2$Year<-as.factor(lgf2$Year)
 lgf2$mass<-as.numeric(lgf2$mass)
 
-
+table(lgf2$mass)
+str(lgf2)
 
 # deal with species
 
@@ -40,17 +41,12 @@ common_sp <- c("BEAL2","BEPA", "FAGR2","PRPE2","ACRU","ACSA3","VILA11")
 
 lgf2[lgf2$SP %in% common_sp , "Common"] <- "Major species"
 
-lgf2 <- lgf2[ , c("Lityear","Site","Stand","Plot","Basket","Basket_Area",
+lgf2 <- lgf2[ , c("Lityear","Site","Stand","Plot","Total_Mass","Basket","Basket_Area",
                   "SP","mass","staplo")]
 
-## Do a plot-level ordination for a single plot
 
-df_sub <-lgf2[lgf2$Stand == "C3",]
+lgf2$uid <- paste(lgf2$Lityear, lgf2$Stand, lgf2$Plot, lgf2$Basket)
 
-df_sub
-
-
-################################
 
 library(vegan)
 library(tidyverse)
@@ -60,8 +56,8 @@ library(tidyverse)
 
 
 # Step 1: Pivot to wide format
-df_wide <- df_sub %>%
-  select(Basket, Lityear, SP, mass, staplo) %>%
+df_wide <- lgf2 %>%
+  select(Basket, Lityear,Stand, Plot, SP, mass, staplo, Total_Mass, uid) %>%
   # Replace NA with 0
   mutate(mass = replace_na(mass, 0)) %>%
   # Pivot wider
@@ -71,6 +67,27 @@ df_wide <- df_sub %>%
     values_fill = 0,
     values_fn = sum  # In case of duplicates, sum them
   )
+
+df_wide <- df_wide[df_wide$Lityear>2007, ]
+names(df_wide)
+df_wide$sort_sum_leaf <- rowSums(df_wide[ , c(8:22)])
+
+
+# df_wide$prop_ACRU <- df_wide$ACRU / df_wide$sort_sum_leaf
+# df_wide$prop_ACSA3 <- df_wide$ACSA3 / df_wide$sort_sum_leaf
+
+
+
+
+# write.csv(df_wide, file="wide_sorted_masses.csv")
+
+ggplot(df_wide, aes(x=Lityear, y= prop_ACSA3))+
+  geom_point()
+names(df_wide)
+
+
+
+#############################################################################
 
 
 

@@ -20,7 +20,7 @@ library(tidyr)
 library(gridExtra)
 library(RColorBrewer)
 
-lit.all2 <- read.csv("D:/Users/bears/Downloads/MELNHE Litterfall EDI Data - Final Data Sheet for EDI(6).csv")
+lit.all2 <- read.csv(here::here("data","MELNHE Litterfall EDI Data June2026.csv"))
 
 lit.all2$Basket
 
@@ -132,7 +132,7 @@ lit.fall.sort2[lit.fall.sort2$Lityear=="2009" &
  
 names(lit.fall.sort2)
 #Convert to long form
-lgf2<- gather(lit.fall.sort2[,c(1:35)], "SP","mass",c(14:35))
+lgf2<- gather(lit.fall.sort2[,c(1:40)], "SP","mass",c(17:40))
 lgf2$staplo<-paste(lgf2$Stand, lgf2$Plot)
 lgf2$Year<-as.factor(lgf2$Year)
 lgf2$mass<-as.numeric(lgf2$mass)
@@ -213,9 +213,9 @@ lgf2[lgf2$Basket=="LF5", "Basket"] <- "5"
 # hist(negatives$mass)
 # 
 # unique(negatives$basket_id)
-# 
- write.csv(n[ , c("Lityear","Stand","Plot","og_basket","SP","mass","avg","basket_id"),],
-           file= "Negative basket masses.csv")
+# # 
+#  write.csv(n[ , c("Lityear","Stand","Plot","og_basket","SP","mass","avg","basket_id"),],
+#            file= "Negative basket masses.csv")
 
 ##########################################
 # Bartlett baskets
